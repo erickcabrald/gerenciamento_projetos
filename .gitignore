@@ -1,5 +1,11 @@
+# Node modules
 node_modules
-# Keep environment variables out of version control
+
+# Environment variables
 .env
+
+# pnpm lock file
 pnpm-lock.yaml
+
+# Prisma migrations
 prisma/migrations/
