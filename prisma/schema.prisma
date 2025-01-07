@@ -20,7 +20,38 @@ model User{
   email     String @unique
   password  String
 
+  projects Project[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@map("users")
+}
+
+model Project{
+  id    String @id @default(uuid())
+  name  String 
+  description String @db.Text
+  startDate  DateTime  @db.Date @map("start_date")
+  endDate DateTime @db.Date @map("end_date")
+  status StatusProject
+  priority Priority
+  createdAt DateTime @db.Date @map("created_at")
+  updatedAt DateTime @db.Date @map("updated_at")
+
+  userId String
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("projects")
+}
+
+enum StatusProject {
+  ongoing
+  completed
+  cancelled
+}
+
+
+enum Priority {
+  low
+  medium
+  high
 }
