@@ -1,7 +1,6 @@
 import { FastifyTypeInstance } from '../types'; // Certifique-se de que o tipo está correto
 import { string, z } from 'zod';
 import { PrismaClient } from '@prisma/client';
-import { request } from 'http';
 
 const prisma = new PrismaClient();
 
@@ -304,7 +303,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
             })
           ),
           500: z.object({
-            message: z.literal('erro ao listar todos projetos'),
+            message: z.literal('erro ao listar todos os projetos'),
             err: z.any(),
           }),
         },
@@ -337,7 +336,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
 
         return reply
           .status(500)
-          .send({ message: 'erro ao listar todos projetos', err: error });
+          .send({ message: 'erro ao listar todos os projetos', err: error });
       }
     }
   );

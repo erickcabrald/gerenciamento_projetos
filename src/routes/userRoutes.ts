@@ -119,6 +119,112 @@ export async function UserRoutes(app: FastifyTypeInstance) {
     }
   );
 
+  // Rota para atualizar um usuário
+  app.put(
+    '/user/:id',
+    {
+      schema: {
+        tags: ['user'],
+        description: 'Update a user by ID',
+        params: z.object({
+          id: z.string(),
+        }),
+        body: z.object({
+          name: z.string().optional(),
+          username: z.string().optional(),
+          email: z.string().email().optional(),
+          password: z.string().optional(),
+        }),
+        response: {
+          200: z.literal('sucess'),
+          404: z.literal('usuario nao encontrado'),
+          400: z.union([
+            z.object({
+              message: z.literal('informação invalida.'),
+              info: z.any(),
+            }),
+            z.object({
+              message: z.literal('email já registrado.'),
+              email: z.string(),
+            }),
+            z.object({
+              message: z.literal('username já registrado.'),
+              username: z.string(),
+            }),
+          ]),
+          500: z.literal('erro ao atualizar usuario'),
+        },
+      },
+    },
+    async (request, reply) => {
+      type updateUser = {
+        name?: string;
+        username?: string | undefined;
+        email?: string | undefined;
+        password?: string;
+      };
+
+      const { id } = request.params;
+
+      const updateUserSchema = z.object({
+        name: z.string().optional(),
+        username: z.string().optional(),
+        email: z.string().email().optional(),
+        password: z.string().optional(),
+      });
+      const result = updateUserSchema.safeParse(request.body);
+
+      if (!result.success) {
+        return reply
+          .status(400)
+          .send({ message: 'informação invalida.', info: result.error.errors });
+      }
+      const { email, username, name, password } = result.data;
+
+      const userData: updateUser = {
+        name,
+        password,
+      };
+
+      try {
+        // Verificar se o e-mail já está registrado
+        if (email && (await checkIfEmailExist(email))) {
+          return reply.status(400).send({
+            message: 'email já registrado.',
+            email,
+          });
+        }
+
+        // Verificar se o username já está registrado
+        if (username && (await checkIfUserNameExist(username))) {
+          return reply.status(400).send({
+            message: 'username já registrado.',
+            username,
+          });
+        }
+
+        userData.email = email;
+        userData.username = username;
+
+        const user = await prisma.user.update({
+          where: {
+            id: id,
+          },
+          data: userData,
+        });
+
+        if (!user) {
+          return reply.status(404).send('usuario nao encontrado');
+        }
+
+        return reply.status(200).send('sucess');
+      } catch (error) {
+        console.error(error);
+        return reply.status(500).send('erro ao atualizar usuario');
+      }
+    }
+  );
+
   // Rota para obter todos os usuários
   app.get(
     '/user',
@@ -176,7 +282,7 @@ export async function UserRoutes(app: FastifyTypeInstance) {
       },
     },
     async (request, reply) => {
-      const { id } = request.params as { id: string };
+      const { id } = request.params;
 
       try {
         const user = await prisma.user.findUnique({
@@ -191,51 +297,6 @@ export async function UserRoutes(app: FastifyTypeInstance) {
       } catch (error) {
         console.error(error);
         return reply.status(500).send('erro ao buscar usuario');
-      }
-    }
-  );
-
-  // Rota para atualizar um usuário
-  app.put(
-    '/user/:id',
-    {
-      schema: {
-        tags: ['user'],
-        description: 'Update a user by ID',
-        params: z.object({
-          id: z.string(),
-        }),
-        body: z.object({
-          name: z.string().optional(),
-          username: z.string().optional(),
-          email: z.string().email().optional(),
-          password: z.string().optional(),
-        }),
-        response: {
-          200: z.literal('sucess'),
-          404: z.literal('usuario nao encontrado'),
-          500: z.literal('erro ao atualizar usuario'),
-        },
-      },
-    },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const updates = request.body;
-
-      try {
-        const user = await prisma.user.update({
-          where: { id },
-          data: updates,
-        });
-
-        if (!user) {
-          return reply.status(404).send('usuario nao encontrado');
-        }
-
-        return reply.status(200).send('sucess');
-      } catch (error) {
-        console.error(error);
-        return reply.status(500).send('erro ao atualizar usuario');
       }
     }
   );
