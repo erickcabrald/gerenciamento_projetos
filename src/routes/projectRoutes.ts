@@ -32,7 +32,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
           userId: z.string().uuid(),
         }),
         response: {
-          200: z.literal('sucess'),
+          201: z.literal('sucess'),
           400: z.object({
             message: z.literal('Invalid information.'),
             info: z.any().describe('infor sobre o erro'),
@@ -87,11 +87,142 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
           },
         });
 
-        return reply.status(200).send('sucess');
+        return reply.status(201).send('sucess');
       } catch (error) {
         return reply
           .status(500)
           .send({ message: 'Erro ao criar o projeto.', err: error });
+      }
+    }
+  );
+
+  app.put(
+    '/project/:id',
+    {
+      schema: {
+        tags: ['project'],
+        description: 'update project',
+        params: z.object({
+          id: z.string().uuid(),
+        }),
+        body: z.object({
+          name: z.string().optional(),
+          description: z.string().optional(),
+          startDate: z
+            .string()
+            .regex(
+              /^\d{4}-\d{2}-\d{2}$/,
+              'Invalid date format. Use YYYY-MM-DD.'
+            )
+            .optional(),
+          endDate: z
+            .string()
+            .regex(
+              /^\d{4}-\d{2}-\d{2}$/,
+              'Invalid date format. Use YYYY-MM-DD.'
+            )
+            .optional(),
+          status: z.enum(['ongoing', 'completed', 'cancelled']).optional(),
+          priority: z.enum(['low', 'medium', 'high']).optional(),
+        }),
+        response: {
+          200: z.literal('sucess'),
+          400: z.object({
+            message: z.literal('Invalid information.'),
+            info: z.any().describe('infor sobre o erro'),
+          }),
+          500: z.object({
+            message: z.literal('Erro ao atualizar o projeto.'),
+            err: z.any(),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      enum Priority {
+        low = 'low',
+        medium = 'medium',
+        high = 'high',
+      }
+
+      enum statusProject {
+        ongoing = 'ongoing',
+        completed = 'completed',
+        cancelled = 'cancelled',
+      }
+
+      type Project = {
+        name?: string;
+        description?: string;
+        startDate?: Date;
+        endDate?: Date;
+        status?: statusProject;
+        priority?: Priority;
+      };
+
+      const { id } = request.params;
+
+      const updateProjectSchema = z.object({
+        name: z.string().optional(),
+        description: z.string().optional(),
+        startDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.')
+          .optional(),
+        endDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.')
+          .optional(),
+        status: z
+          .enum([
+            statusProject.ongoing,
+            statusProject.completed,
+            statusProject.cancelled,
+          ])
+          .optional(),
+        priority: z
+          .enum([Priority.low, Priority.medium, Priority.high])
+          .optional(),
+      });
+
+      const result = updateProjectSchema.safeParse(request.body);
+
+      if (!result.success) {
+        return reply.status(400).send({
+          message: 'Invalid information.',
+          info: {
+            message_error: result.error.message,
+          },
+        });
+      }
+
+      const projectData: Project = {
+        name: result.data.name,
+        description: result.data.description,
+        status: result.data.status,
+        priority: result.data.priority,
+      };
+
+      if (result.data.startDate) {
+        projectData.startDate = new Date(result.data.startDate);
+      }
+      if (result.data.endDate) {
+        projectData.endDate = new Date(result.data.endDate);
+      }
+
+      try {
+        const updateProject = await prisma.project.update({
+          where: {
+            id: id,
+          },
+          data: projectData,
+        });
+
+        return reply.status(200).send('sucess');
+      } catch (error) {
+        return reply
+          .status(500)
+          .send({ message: 'Erro ao atualizar o projeto.', err: error });
       }
     }
   );
@@ -105,6 +236,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
         response: {
           200: z.array(
             z.object({
+              id: z.string().uuid(),
               name: z.string(),
               description: z.string().nullable(),
               status: z.string().nullable(),
@@ -126,6 +258,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
       try {
         const projects = await prisma.project.findMany({
           select: {
+            id: true,
             name: true,
             description: true,
             status: true,
@@ -186,6 +319,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
             userId: userId,
           },
           select: {
+            id: true,
             name: true,
             description: true,
             status: true,
