@@ -9,6 +9,7 @@ import {
 import { fastifySwagger } from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import { UserRoutes } from './routes/userRoutes';
+import { ProjectRoutes } from './routes/projectRoutes';
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -32,6 +33,7 @@ app.register(fastifySwaggerUi, {
 });
 
 app.register(UserRoutes);
+app.register(ProjectRoutes);
 
 app.listen({ port: 3333 }).then(() => {
   console.log('Server running');
