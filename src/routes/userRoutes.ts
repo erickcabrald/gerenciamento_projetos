@@ -319,7 +319,7 @@ export async function UserRoutes(app: FastifyTypeInstance) {
       },
     },
     async (request, reply) => {
-      const { id } = request.params as { id: string };
+      const { id } = request.params;
 
       try {
         const user = await prisma.user.delete({
