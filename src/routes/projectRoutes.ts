@@ -281,7 +281,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
   );
 
   app.get(
-    '/project/:userId',
+    'user/project/:userId',
     {
       schema: {
         tags: ['project'],
@@ -337,6 +337,89 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
         return reply
           .status(500)
           .send({ message: 'erro ao listar todos os projetos', err: error });
+      }
+    }
+  );
+
+  app.get(
+    '/project/id',
+    {
+      schema: {
+        tags: ['project'],
+        description: 'lista project',
+        params: z.object({
+          id: z.string().uuid(),
+        }),
+        response: {
+          200: z.object({
+            id: z.string().uuid(),
+            name: z.string(),
+            description: z.string().nullable(),
+            status: z.string().nullable(),
+            priority: z.string().nullable(),
+            startDate: z.date(),
+            endDate: z.date(),
+            createdAt: z.date(),
+            updatedAt: z.date(),
+          }),
+          400: z.object({
+            message: z.literal('Parâmetro inválido'),
+            info: z.any(),
+          }),
+          404: z.object({
+            message: z.literal('Projeto não encontrado'),
+          }),
+          500: z.object({
+            message: z.literal('erro ao listar o projeto'),
+            err: z.any(),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const paramsSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const result = paramsSchema.safeParse(request.params);
+
+      if (!result.success) {
+        return reply
+          .status(400)
+          .send({ message: 'Parâmetro inválido', info: result.error.errors });
+      }
+
+      const { id } = result.data;
+
+      try {
+        const project = await prisma.project.findUnique({
+          where: {
+            id: id,
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            status: true,
+            priority: true,
+            startDate: true,
+            endDate: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        if (!project) {
+          return reply.status(404).send({ message: 'Projeto não encontrado' });
+        }
+
+        return reply.status(200).send(project);
+      } catch (error) {
+        console.error(error);
+
+        return reply
+          .status(500)
+          .send({ message: 'erro ao listar o projeto', err: error });
       }
     }
   );
