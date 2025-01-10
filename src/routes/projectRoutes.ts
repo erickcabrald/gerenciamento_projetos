@@ -1,6 +1,7 @@
 import { FastifyTypeInstance } from '../types'; // Certifique-se de que o tipo está correto
 import { string, z } from 'zod';
 import { PrismaClient } from '@prisma/client';
+import { error } from 'console';
 
 const prisma = new PrismaClient();
 
@@ -222,6 +223,64 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
         return reply
           .status(500)
           .send({ message: 'Erro ao atualizar o projeto.', err: error });
+      }
+    }
+  );
+
+  app.delete(
+    '/project/id',
+    {
+      schema: {
+        tags: ['project'],
+        description: 'delete project',
+        params: z.object({
+          id: z.string().uuid(),
+        }),
+        response: {
+          200: z.literal('sucess'),
+          404: z.object({
+            message: z.literal('projeto não encontrado'),
+          }),
+          400: z.object({
+            message: z.literal('dados invalidos'),
+            info: z.any(),
+          }),
+          500: z.object({
+            message: z.literal('erro ao deletar o projeto'),
+            error: z.any(),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const paramsSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const result = paramsSchema.safeParse(request.params);
+
+      if (!result.success) {
+        return reply
+          .status(400)
+          .send({ message: 'dados invalidos', info: result.error?.errors });
+      }
+
+      const { id } = result.data;
+      try {
+        const deleteProject = prisma.project.delete({
+          where: {
+            id: id,
+          },
+        });
+
+        if (!deleteProject) {
+          return reply.status(404).send({ message: 'projeto não encontrado' });
+        }
+      } catch (error) {
+        return reply.status(500).send({
+          message: 'erro ao deletar o projeto',
+          error: error,
+        });
       }
     }
   );
