@@ -1,7 +1,6 @@
-import { FastifyTypeInstance } from '../types'; // Certifique-se de que o tipo está correto
+import { FastifyTypeInstance } from '../types';
 import { string, z } from 'zod';
 import { PrismaClient } from '@prisma/client';
-import { error } from 'console';
 
 const prisma = new PrismaClient();
 
@@ -340,7 +339,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
   );
 
   app.get(
-    'user/project/:userId',
+    '/user/project/:userId',
     {
       schema: {
         tags: ['project'],
