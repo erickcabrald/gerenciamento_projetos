@@ -52,7 +52,7 @@ model Task{
   name String
   description String? @db.Text
   due_date DateTime @db.Date
-  status StatusTask
+  status StatusTask @default(Pending)
   priority Priority
   createdAt       DateTime @default(now())  @map("created_at")
   updatedAt       DateTime @updatedAt  @map("updated_at")
@@ -93,7 +93,7 @@ enum InviteStatus {
 
 enum StatusTask {
   Pending
-  In_progres
+  In_progress
   completed
 }
 
