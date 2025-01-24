@@ -9,3 +9,7 @@ pnpm-lock.yaml
 
 # Prisma migrations
 prisma/migrations/
+
+
+
+src/docs/
