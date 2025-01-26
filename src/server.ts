@@ -17,6 +17,7 @@ import { ProjectRoutes } from './routes/projectRoutes';
 import { InviteRoute } from './routes/iniviteRoutes';
 import { SendInviteRoute } from './routes/sendInviteRoute';
 import { taskRoutes } from './routes/taskRoutes';
+import authRoutes from './routes/authRoutes';
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -51,23 +52,19 @@ app.register(ProjectRoutes);
 app.register(taskRoutes);
 app.register(SendInviteRoute);
 app.register(InviteRoute);
+app.register(authRoutes);
 
-const startServer = async () => {
-  try {
-    await app.listen({ port: 3333 });
+app.listen({ port: 3333 }).then(() => {
+  console.log('🚀 Server running at http://localhost:3333');
+  console.log('📚 Swagger docs available at http://localhost:3333/docs');
 
-    // Salvar a especificação OpenAPI automaticamente
-    const openApiSpec = app.swagger();
-    const outputPath = path.resolve(__dirname, './docs/openapi.json');
-    fs.writeFileSync(outputPath, JSON.stringify(openApiSpec, null, 2));
-    console.log(`✅ OpenAPI specification saved at: ${outputPath}`);
-
-    console.log('🚀 Server running at http://localhost:3333');
-    console.log('📚 Swagger docs available at http://localhost:3333/docs');
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
-};
-
-startServer();
+  const openApiSpec = app.swagger();
+  const outputPath = path.resolve(__dirname, './docs/openapi.json');
+  fs.writeFile(outputPath, JSON.stringify(openApiSpec, null, 2), (err) => {
+    if (err) {
+      console.error('Failed to save OpenAPI spec:', err);
+    } else {
+      console.log(`✅ OpenAPI specification saved at: ${outputPath}`);
+    }
+  });
+});

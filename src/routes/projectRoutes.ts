@@ -1,13 +1,13 @@
 import { FastifyTypeInstance } from '../types';
 import { string, z } from 'zod';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../utils/prisma';
+import { authenticate } from '../ middleware/authenticate';
 
 export async function ProjectRoutes(app: FastifyTypeInstance) {
   app.post(
     '/project',
     {
+      preHandler: authenticate,
       schema: {
         tags: ['project'],
         description: 'create project',
@@ -98,6 +98,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
   app.put(
     '/project/:id',
     {
+      preHandler: authenticate,
       schema: {
         tags: ['project'],
         description: 'update project',
@@ -229,6 +230,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
   app.delete(
     '/project/id',
     {
+      preHandler: authenticate,
       schema: {
         tags: ['project'],
         description: 'delete project',

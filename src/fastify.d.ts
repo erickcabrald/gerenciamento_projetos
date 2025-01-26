@@ -6,6 +6,7 @@ declare module 'fastify' {
     user?: {
       id: string;
       email: string;
+      username: string;
       [key: string]: any; // Para permitir propriedades adicionais, se necessário
     };
   }

@@ -1,9 +1,8 @@
 import { FastifyTypeInstance } from '../types'; // Certifique-se de que o tipo está correto
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../utils/prisma';
+import { authenticate } from '../ middleware/authenticate';
 
 // Funções
 async function checkIfEmailExist(email: string): Promise<boolean> {
@@ -28,6 +27,7 @@ export async function UserRoutes(app: FastifyTypeInstance) {
   app.post(
     '/user',
     {
+      preHandler: authenticate,
       schema: {
         tags: ['user'],
         description: 'Create a new user',
@@ -123,6 +123,7 @@ export async function UserRoutes(app: FastifyTypeInstance) {
   app.put(
     '/user/:id',
     {
+      preHandler: authenticate,
       schema: {
         tags: ['user'],
         description: 'Update a user by ID',
@@ -305,6 +306,7 @@ export async function UserRoutes(app: FastifyTypeInstance) {
   app.delete(
     '/user/:id',
     {
+      preHandler: authenticate,
       schema: {
         tags: ['user'],
         description: 'Delete a user by ID',

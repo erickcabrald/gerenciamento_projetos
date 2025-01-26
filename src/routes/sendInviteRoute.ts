@@ -1,11 +1,13 @@
 import { FastifyTypeInstance } from '../types';
 import { sendInvite } from '../services/sendInvite';
 import { z } from 'zod';
+import { authenticate } from '../ middleware/authenticate';
 
 export async function SendInviteRoute(app: FastifyTypeInstance) {
   app.post(
     '/send-invite',
     {
+      preHandler: authenticate,
       schema: {
         tags: ['invite'],
         description: 'envio do convite',

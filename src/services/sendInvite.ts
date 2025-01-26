@@ -1,14 +1,9 @@
-import { sendEmail } from './emailService'; // Certifique-se de que o caminho está correto
-import { createInvite } from './inviteService'; // Caminho correto do arquivo onde está a função acima
+import { sendEmail } from './emailService';
+import { createInvite } from './inviteService';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-/**
- * Envia um convite por e-mail para o usuário.
- * @param email - E-mail do destinatário.
- * @param projectId - ID do projeto ao qual o convite está relacionado.
- */
 export async function sendInvite(email: string, projectId: string) {
   try {
     // Verificar se o projeto existe

@@ -1,8 +1,7 @@
 import { FastifyTypeInstance } from '../types';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../utils/prisma';
+import { authenticate } from '../ middleware/authenticate';
 
 // Verifica se o usuário participa do projeto
 async function isUserInProject(userId: string, projectId: string) {
@@ -26,8 +25,9 @@ export async function taskRoutes(app: FastifyTypeInstance) {
   app.post(
     '/task',
     {
+      preHandler: authenticate,
       schema: {
-        tags: ['task'],
+        tags: ['Task'],
         description: 'Create a new task',
         body: z.object({
           userId: z.string(),
@@ -51,6 +51,7 @@ export async function taskRoutes(app: FastifyTypeInstance) {
           }),
           404: z.literal('User does not participate in this project'),
         },
+        500: z.literal('User does not participate in this project'),
       },
     },
     async (request, reply) => {
@@ -120,97 +121,187 @@ export async function taskRoutes(app: FastifyTypeInstance) {
   );
 
   // Rota para listar tarefas de um projeto
-  app.get('/tasks/:projectId', async (request, reply) => {
-    const paramsSchema = z.object({
-      projectId: z.string(),
-    });
-
-    const result = paramsSchema.safeParse(request.params);
-
-    if (!result.success) {
-      return reply
-        .status(400)
-        .send({ message: 'Invalid projectId', info: result.error.errors });
-    }
-
-    const { projectId } = result.data;
-
-    try {
-      const tasks = await prisma.task.findMany({
-        where: { projectId },
+  app.get(
+    '/tasks/:projectId',
+    {
+      schema: {
+        tags: ['Task'],
+        description: 'List tasks of a project',
+        params: z.object({
+          projectId: z.string(),
+        }),
+        response: {
+          200: z.array(
+            z.object({
+              id: z.number(),
+              name: z.string(),
+              description: z.string().nullable(),
+              due_date: z.date(),
+              status: z.enum(['Pending', 'In_progress', 'completed']),
+              priority: z.enum(['low', 'medium', 'high']),
+            })
+          ),
+          400: z.object({
+            message: z.literal('Invalid projectId'),
+            info: z.any(),
+          }),
+          500: z.literal('Internal server error'),
+        },
+      },
+    },
+    async (request, reply) => {
+      const paramsSchema = z.object({
+        projectId: z.string(),
       });
 
-      return reply.status(200).send(tasks);
-    } catch (error) {
-      console.error(error);
-      return reply.status(500).send('Internal server error');
+      const result = paramsSchema.safeParse(request.params);
+
+      if (!result.success) {
+        return reply
+          .status(400)
+          .send({ message: 'Invalid projectId', info: result.error.errors });
+      }
+
+      const { projectId } = result.data;
+
+      try {
+        const tasks = await prisma.task.findMany({
+          where: { projectId },
+        });
+
+        return reply.status(200).send(tasks);
+      } catch (error) {
+        console.error(error);
+        return reply.status(500).send('Internal server error');
+      }
     }
-  });
+  );
 
-  app.put('/task/:taskId', async (request, reply) => {
-    const paramsSchema = z.object({
-      taskId: z.string(),
-    });
-
-    const bodySchema = z.object({
-      description: z.string().optional(),
-      name: z.string().optional(),
-      due_date: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.')
-        .optional(),
-      status: z.enum(['Pending', 'In_progress', 'completed']).optional(), // Corrigido aqui
-      priority: z.enum(['low', 'medium', 'high']).optional(),
-    });
-
-    const paramsResult = paramsSchema.safeParse(request.params);
-    const bodyResult = bodySchema.safeParse(request.body);
-
-    if (!paramsResult.success || !bodyResult.success) {
-      return reply.status(400).send({ message: 'Validation error' });
-    }
-
-    const { taskId } = paramsResult.data;
-    const updates = bodyResult.data;
-
-    try {
-      const task = await prisma.task.update({
-        where: { id: parseInt(taskId, 10) },
-        data: updates,
+  app.put(
+    '/task/:taskId',
+    {
+      preHandler: authenticate,
+      schema: {
+        tags: ['Task'],
+        description: 'Update a task',
+        params: z.object({
+          taskId: z.string(),
+        }),
+        body: z.object({
+          description: z.string().optional(),
+          name: z.string().optional(),
+          due_date: z
+            .string()
+            .regex(
+              /^\d{4}-\d{2}-\d{2}$/,
+              'Invalid date format. Use YYYY-MM-DD.'
+            )
+            .optional(),
+          status: z.enum(['Pending', 'In_progress', 'completed']).optional(),
+          priority: z.enum(['low', 'medium', 'high']).optional(),
+        }),
+        response: {
+          200: z.object({
+            id: z.number(),
+            name: z.string(),
+            description: z.string().nullable(),
+            due_date: z.date(),
+            status: z.enum(['Pending', 'In_progress', 'completed']),
+            priority: z.enum(['low', 'medium', 'high']),
+          }),
+          400: z.object({
+            message: z.literal('Validation error'),
+          }),
+          500: z.literal('Internal server error'),
+        },
+      },
+    },
+    async (request, reply) => {
+      const paramsSchema = z.object({
+        taskId: z.string(),
       });
 
-      return reply.status(200).send(task);
-    } catch (error) {
-      console.error(error);
-      return reply.status(500).send('Internal server error');
+      const bodySchema = z.object({
+        description: z.string().optional(),
+        name: z.string().optional(),
+        due_date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.')
+          .optional(),
+        status: z.enum(['Pending', 'In_progress', 'completed']).optional(), // Corrigido aqui
+        priority: z.enum(['low', 'medium', 'high']).optional(),
+      });
+
+      const paramsResult = paramsSchema.safeParse(request.params);
+      const bodyResult = bodySchema.safeParse(request.body);
+
+      if (!paramsResult.success || !bodyResult.success) {
+        return reply.status(400).send({ message: 'Validation error' });
+      }
+
+      const { taskId } = paramsResult.data;
+      const updates = bodyResult.data;
+
+      try {
+        const task = await prisma.task.update({
+          where: { id: parseInt(taskId, 10) },
+          data: updates,
+        });
+
+        return reply.status(200).send(task);
+      } catch (error) {
+        console.error(error);
+        return reply.status(500).send('Internal server error');
+      }
     }
-  });
+  );
 
   // Rota para deletar uma tarefa
-  app.delete('/task/:taskId', async (request, reply) => {
-    const paramsSchema = z.object({
-      taskId: z.string(),
-    });
-
-    const result = paramsSchema.safeParse(request.params);
-
-    if (!result.success) {
-      return reply
-        .status(400)
-        .send({ message: 'Invalid taskId', info: result.error.errors });
-    }
-
-    const { taskId } = result.data;
-
-    try {
-      await prisma.task.delete({
-        where: { id: parseInt(taskId, 10) },
+  app.delete(
+    '/task/:taskId',
+    {
+      preHandler: authenticate,
+      schema: {
+        tags: ['Task'],
+        description: 'Delete a task',
+        params: z.object({
+          taskId: z.string(),
+        }),
+        response: {
+          200: z.object({ message: z.literal('Task deleted successfully') }),
+          400: z.object({
+            message: z.literal('Invalid taskId'),
+            info: z.any(),
+          }),
+          500: z.literal('Internal server error'),
+        },
+      },
+    },
+    async (request, reply) => {
+      const paramsSchema = z.object({
+        taskId: z.string(),
       });
 
-      return reply.status(200).send({ message: 'Task deleted successfully' });
-    } catch (error) {
-      console.error(error);
-      return reply.status(500).send('Internal server error');
+      const result = paramsSchema.safeParse(request.params);
+
+      if (!result.success) {
+        return reply
+          .status(400)
+          .send({ message: 'Invalid taskId', info: result.error.errors });
+      }
+
+      const { taskId } = result.data;
+
+      try {
+        await prisma.task.delete({
+          where: { id: parseInt(taskId, 10) },
+        });
+
+        return reply.status(200).send({ message: 'Task deleted successfully' });
+      } catch (error) {
+        console.error(error);
+        return reply.status(500).send('Internal server error');
+      }
     }
-  });
+  );
 }
