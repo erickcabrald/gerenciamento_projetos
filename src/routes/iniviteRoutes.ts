@@ -2,8 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { FastifyTypeInstance } from '../types';
 import { z } from 'zod';
-
-const prisma = new PrismaClient();
+import { prisma } from '../utils/prisma';
 
 export async function InviteRoute(app: FastifyTypeInstance) {
   app.get(

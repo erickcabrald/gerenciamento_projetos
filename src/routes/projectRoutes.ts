@@ -5,12 +5,14 @@ import { authenticate } from '../ middleware/authenticate';
 
 export async function ProjectRoutes(app: FastifyTypeInstance) {
   app.post(
-    '/project',
+    '/project/:id',
     {
-      preHandler: authenticate,
       schema: {
         tags: ['project'],
         description: 'create project',
+        params: z.object({
+          userId: z.string().uuid(),
+        }),
         body: z.object({
           name: z.string(),
           description: z.string().optional(),
@@ -28,7 +30,6 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
             ),
           status: z.enum(['ongoing', 'completed', 'cancelled']).optional(),
           priority: z.enum(['low', 'medium', 'high']).optional(),
-          userId: z.string().uuid(),
         }),
         response: {
           201: z.literal('sucess'),
@@ -55,9 +56,8 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
           .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.'),
         status: z.enum(['ongoing', 'completed', 'cancelled']).optional(),
         priority: z.enum(['low', 'medium', 'high']).optional(),
-        userId: z.string().uuid(),
       });
-
+      const { userId } = request.params;
       const result = projectSchema.safeParse(request.body);
 
       if (!result.success) {
@@ -82,7 +82,7 @@ export async function ProjectRoutes(app: FastifyTypeInstance) {
             endDate: endDate,
             status: result.data.status,
             priority: result.data.priority,
-            userId: result.data.userId,
+            userId,
           },
         });
 

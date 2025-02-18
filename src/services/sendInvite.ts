@@ -22,12 +22,12 @@ export async function sendInvite(email: string, projectId: string) {
     const inviteLink = `http://localhost:3333/accept-invite?token=${token}`;
 
     // Conteúdo do e-mail
-    const subject = 'You have been invited to collaborate on a project!';
+    const subject = 'Você está sendo convidado a participar de um projeto!';
     const html = `
-      <h1>Project Invitation</h1>
-      <p>You have been invited to collaborate on a project. Click the link below to accept the invitation:</p>
-      <a href="${inviteLink}" target="_blank">Accept Invitation</a>
-      <p>This invitation will expire in 7 days.</p>
+      <h1Convite de colaboração/h1>
+      <p>você está sendo convidado participar do projeto ${project?.name}. Click no link a seguir para aceitar o convite:</p>
+      <a href="${inviteLink}" target="_blank">Aceitar convite</a>
+      <p>este convite espira em 7 dias.</p>
     `;
 
     // Envia o e-mail

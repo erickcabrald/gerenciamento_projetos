@@ -3,6 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { prisma } from '../utils/prisma';
 import { authenticate } from '../ middleware/authenticate';
+import { generateToken } from '../services/jwt';
 
 // Funções
 async function checkIfEmailExist(email: string): Promise<boolean> {
@@ -27,7 +28,6 @@ export async function UserRoutes(app: FastifyTypeInstance) {
   app.post(
     '/user',
     {
-      preHandler: authenticate,
       schema: {
         tags: ['user'],
         description: 'Create a new user',
